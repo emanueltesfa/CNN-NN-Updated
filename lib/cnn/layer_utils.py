@@ -196,7 +196,116 @@ class ConvLayer2D(object):
         # corresponding name.                                                       #
         # Store the output gradients in the variable dimg provided above.           #
         #############################################################################
-        pass
+        
+        """ Works but doesnt
+        img_pad = np.pad(img, ((0,), (self.padding,), (self.padding,), (0,)), mode='constant')
+        w_shape = self.params[self.w_name].shape
+        dw = np.zeros((w_shape[3] , w_shape[0], w_shape[1], w_shape[2]))
+        self.grads[self.b_name] = np.zeros(self.params[self.b_name].shape)
+        dimg = np.zeros_like(img_pad)
+
+        for batch in range(dprev.shape[0]):
+            for pixel_h in range(dprev.shape[1]):
+                for pixel_w in range (dprev.shape[2]):
+                    # cropped_img = img_pad[:, pixel_h * self.stride: self.kernel_size +  (pixel_h * self.stride) , pixel_w * self.stride: (pixel_w * self.stride) + self.kernel_size, :]
+                    # print(cropped_img.shape)
+                    
+                    window = img_pad[batch, pixel_h*self.stride:pixel_h*self.stride+self.kernel_size, pixel_w*self.stride:pixel_w*self.stride+self.kernel_size, :]
+                    #print(window.shape)
+                    dw += dprev[batch][pixel_h][pixel_w].reshape((-1,1,1,1)) * window 
+                    dimg[batch, pixel_w*self.stride:pixel_w*self.stride+self.kernel_size, pixel_h*self.stride:pixel_h*self.stride+self.kernel_size, :] += (dprev[batch][pixel_h][pixel_w].reshape((1,1,1,-1))*self.params[self.w_name]).sum(axis=3)
+        dimg = dimg[:, self.padding:img.shape[1]+self.padding, self.padding: img.shape[2]+self.padding,:]
+        self.grads[self.w_name] = dw.transpose(1,2,3,0)
+    
+        self.grads[self.b_name] = np.sum(dprev, axis=(0, 1, 2))"""
+
+        """
+        SEND TO HINSING
+        img_pad = np.pad(img, ((0,), (self.padding,), (self.padding,), (0,)), mode='constant')
+
+        # Compute gradients for weights and bias
+        dw = np.zeros_like(self.params[self.w_name])
+        self.grads[self.b_name] = np.sum(dprev, axis=(0, 1, 2))
+        dimg_pad = np.zeros_like(img_pad)
+
+        for batch in range(dprev.shape[0]):
+            for pixel_h in range((img_pad.shape[1] - self.kernel_size) // self.stride + 1):
+                for pixel_w in range((img_pad.shape[2] - self.kernel_size) // self.stride + 1):
+                    #window = img_pad[batch, pixel_h*self.stride:pixel_h*self.stride+self.kernel_size,
+                                    #pixel_w*self.stride:pixel_w*self.stride+self.kernel_size, :]
+                    #print(dw.shape,  dprev.shape, window.shape )
+                    #dw += np.expand_dims(dprev[batch, pixel_h, pixel_w, :], axis=(1, 2, 3)) * window
+
+                    # Compute gradient for input image
+                    dimg_pad[batch, pixel_h*self.stride:pixel_h*self.stride+self.kernel_size,
+                            pixel_w*self.stride:pixel_w*self.stride+self.kernel_size, :] += \
+                        np.sum(dprev[batch, pixel_h, pixel_w, :].reshape(1, 1, 1, -1) *
+                            self.params[self.w_name], axis=3)
+
+        dimg = dimg_pad[:, self.padding:img.shape[1]+self.padding, self.padding:img.shape[2]+self.padding, :]
+        self.grads[self.w_name] = dw.transpose((1, 2, 3, 0))"""
+        
+
+        """# calculate db 
+        self.grads[self.b_name] = np.sum(dprev, axis=(0,1,2))
+
+        # calculate dw
+        stack_img = img.shape[0]
+        w_shape = self.params[self.w_name].shape
+        dw = np.zeros((w_shape[3] , w_shape[0], w_shape[1], w_shape[2]))
+
+        #pad img
+        img_pad = np.pad(img, ((0,), (self.padding,), (self.padding,), (0,)), mode='constant')
+        dimg = np.zeros(img_pad.shape)
+        #print("img_pad", img_pad.shape, "padimg: ", img_pad)
+
+        for batch in range (stack_img):
+            for pixel_h in range(dprev.shape[1]):
+                for pixel_w in range(dprev.shape[2]): 
+                    for filter in range(self.number_filters):
+                        cropped_img = img_pad[:, pixel_h * self.stride: self.kernel_size +  (pixel_h * self.stride) , pixel_w * self.stride: (pixel_w * self.stride) + self.kernel_size, :]
+                        print("dw: ", dw.shape, "dprev: ", dprev[batch][pixel_w][pixel_h].reshape((-1,1,1,1)).shape, dprev[batch][pixel_w][pixel_h].shape, "Crop_img: ", cropped_img.shape)
+                        temp = dprev[batch][pixel_w][pixel_h]
+                        dw += cropped_img
+                        dimg[batch, pixel_w*self.stride:pixel_w*self.stride+self.kernel_size, pixel_h*self.stride:pixel_h*self.stride+self.kernel_size, :] += (dprev[batch][pixel_w][pixel_h].reshape((1,1,1,-1))*self.params[self.w_name]).sum(axis=3)
+        dimg = dimg[:, self.padding:img.shape[1]+self.padding, self.padding: img.shape[2]+self.padding,:]
+        self.grads[self.w_name] = dw.transpose(1,2,3,0)"""
+
+
+
+        """
+        img_pad = np.zeros ([img.shape[0], img.shape [1]+2*self.padding, img.shape[2]+2*self.padding, img.shape[3]])
+        img_pad[:, self.padding: img.shape[1]+self.padding, self.padding:img.shape[2]+self.padding, :] = img
+
+        #output = np.empty(output_shape)
+
+        stride = (img_pad.strides[0],img_pad.strides[1]*self.stride, img_pad.strides[2]*self.stride, img_pad.strides[1], img_pad.strides[2], img_pad.strides[3])
+
+        shape = (img_pad.shape [0], dprev.shape [1], dprev.shape [2], self.kernel_size, self.kernel_size, img_pad.shape[3])
+
+        window = np.lib.stride_tricks.as_strided(img_pad, shape=shape, strides=stride, writeable=False)
+
+        self.grads [self.w_name] = np.tensordot(window, dprev, axes= ( (0,1,2), (0,1, 2)))
+
+        self.grads[self.b_name] = np.sum(dprev, axis=(0,1,2))
+
+        dimg_pad = np.zeros((*dprev.shape[:-1], *img_pad.shape [1:]))
+
+        istride = (dimg_pad.strides[0], dimg_pad.strides[1]+dimg_pad.strides[3]*self.stride, dimg_pad.strides[2]+dimg_pad.strides[4]*self.stride, dimg_pad.strides[3],dimg_pad.strides[4],dimg_pad.strides[5])
+
+        ishape = (*dimg_pad.shape[:3], self.kernel_size, self.kernel_size, dimg_pad.shape[-1])
+
+        iwindow = np.lib.stride_tricks.as_strided(dimg_pad, shape=ishape,strides=istride)
+
+        arr = np.tensordot(dprev, self.params [self.w_name], axes=( (3), (3)))
+
+        iwindow[:] = arr
+
+        dimg_pad = np. sum(dimg_pad,axis=(1,2))
+
+        dimg = dimg_pad[ :,self.padding:img.shape[1]+self.padding, self.padding:img.shape[2]+self.padding, :]
+"""
+
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
@@ -222,32 +331,17 @@ class MaxPoolingLayer(object):
         # TODO: Implement the forward pass of a single maxpooling layer.            #
         # Store your results in the variable "output" provided above.               #
         #############################################################################
-        #print("img shape: ", img.shape, "pool_size: ", self.pool_size, "Stride: ", self.stride)
         pool_s = self.pool_size
         out_width = int ( np.floor( (img.shape[2] - self.pool_size) / 2) + 1 )
         out_height = int ( np.floor( (img.shape[1] - self.pool_size) / 2) + 1 )
-
         output = np.zeros((img.shape[0], out_height, out_width,  img.shape[-1]))
-        switches = np.zeros_like(output, dtype=np.int64)
         for p_h in range(out_height):
             for p_w in range(out_height): 
                 pool_window = img[:,
                                    p_h * self.stride: pool_s + p_h * self.stride ,   
                                    p_w * self.stride: pool_s + p_w * self.stride, 
                                    :]
-                #max_idxs = np.argmax(pool_window, axis=(1, 2))  
-
                 output[:, p_h, p_w, :] = np.max(pool_window, axis=(1,2))
-                #switches[:, p_h, p_w, :] = np.ravel_multi_index(max_idxs.T, pool_window.shape[:-1]) 
-                #print(f'Element[{p_h}{p_w}] ')
-                """
-                max = None
-                for elem in pool_window.flat:
-                    if elem >= max :
-                        max = elem
-                output[:, p_h, p_w, :] = max
-                    print(f'Element[{p_h}{p_w}]: {elem}')"""
-                
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
