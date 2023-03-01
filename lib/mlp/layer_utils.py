@@ -70,11 +70,9 @@ class sequential(object):
         for layer in self.layers:
             for n, v in layer.grads.items():
                 ######## TODO ########
-                # param = self.params[n]
-                # grad = (param > 0).astype(np.float32) - (param < 0).astype(np.float32)
-                #self.grads[n] += lam * grad
-                # hinny layer.grads[n] += np.sum(np.abs(v)) * lam
-                # aman layer.grads[n] += np.sign(layer.params[n]) * lam
+
+                # this layer.grads[n] += np.sum(np.abs(v)) * lam
+                # or this layer.grads[n] += np.sign(layer.params[n]) * lam
                
                 layer.grads[n] += lam * np.sign(v)
                 ######## END  ########
@@ -124,6 +122,7 @@ class flatten(object):
         # Store the results in the variable self.meta provided above.               #
         #############################################################################
         output = feat.reshape(feat.shape[0], -1)
+        #print(output.shape)
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################

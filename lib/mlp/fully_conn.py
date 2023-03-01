@@ -50,9 +50,9 @@ class SmallFullyConnectedNetwork(Module):
     def __init__(self, keep_prob=0, dtype=np.float32, seed=None):
         self.net = sequential(
             ########## TODO: ##########
-            fc(4, 30, init_scale=2e-4, name="fc2"),
+            fc(4, 30, init_scale=2e-2, name="fc2"),
             gelu(name='gelu'),
-            fc(30, 7, init_scale=2e-4, name="fc3"),
+            fc(30, 7, init_scale=2e-2, name="fc3"),
             ########### END ###########
         )
 
