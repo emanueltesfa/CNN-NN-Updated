@@ -24,10 +24,11 @@ class SmallConvolutionalNetwork(Module):
     def __init__(self, keep_prob=0, dtype=np.float32, seed=None):
         self.net = sequential(
             ########## TODO: ##########
-            ConvLayer2D(input_channels=3, kernel_size=4, number_filters=30, stride=2, padding=0, name="conv"),
-            MaxPoolingLayer(3,1, name="maxpool"),
+            ConvLayer2D(input_channels=3, kernel_size=5, number_filters=30, stride=2, padding=0, name="conv"),
+            MaxPoolingLayer(4,1, name="maxpool"),
             flatten(name="flatten"),
-            fc(1470, 20, init_scale=0.02, name="fc"),
+            fc(1080, 20, init_scale=0.02, name="fc"),
+            gelu(name="gelu")
             
             
             ########### END ###########
