@@ -13,9 +13,9 @@ class TestCNN(Module):
         self.net = sequential(
             ########## TODO: ##########
             ConvLayer2D(input_channels=3, kernel_size=3, number_filters=3, stride=1, padding=0, name="conv1"),
-            MaxPoolingLayer(2,1, name="maxpool1"),
+            MaxPoolingLayer(3,1, name="maxpool1"),
             flatten(name="flatten1"),
-            fc(27, 5, init_scale=0.02, name="fc1"),
+            fc(27, 5, init_scale=2e-2, name="fc1"),
             ########### END ###########
         )
 
