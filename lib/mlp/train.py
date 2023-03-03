@@ -153,26 +153,11 @@ def train_net(data, model, loss_func, optimizer, batch_size, max_epochs,
             # Notice: In backward pass, you should enable regularization.               #
             # Store the loss to loss_hist                                               #
             #############################################################################
-            #print(data_batch.shape, labels_batch.shape)
-
             scores = model.forward(feat=data_batch)
-
             loss = loss_func.forward(scores, labels_batch)
-            #print("forard loss: ", loss)
-            #print(scores.shape, labels_batch.shape)
-
-            # Regularization
-            # model.sequential.apply_l2_regularization(reg_lambda)
-            
-           
-            # Backward pass and update parameters
-            # model.net.zero_grad()
-            
             d_loss = loss_func.backward()
             model.backward(d_loss, regularization=regularization)
-            #print("LOSS2: ", d_loss.shape)
             optimizer.step()
-            # Store the loss to loss_hist
             loss_hist.append(loss.item())
             #############################################################################
             #                             END OF YOUR CODE                              #

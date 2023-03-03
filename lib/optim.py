@@ -71,18 +71,9 @@ class Adam(Optimizer):
         #############################################################################
         # TODO: Implement the Adam with [optinal] Weight Decay                      #
         #############################################################################
-        #print("beta: ", self.beta1, "eps: ",  self.eps, "mt: ", self.mt['adam_fc_w'].shape, "vt: ", self.vt['adam_fc_w'].shape , "t: ", self.t)
-        self.t += 1 
-        #print(layer.grads['adam_fc_w']) # is this var the same as theta = 
-        
-        # 
-        # if self.mt == None:
-        #     self.mt = 0
+        self.t += 1         
 
         for n, dv in layer.grads.items():
-            # print("layrer parmams: ", layer.grads[n])
-            # print(layer.grads['adam_fc_w'])
-            #print("self.mt[n]: ", self.mt[n])
             if n not in self.mt.keys(): 
                 self.mt[n] = 0
             if n not in self.vt.keys():
@@ -94,10 +85,6 @@ class Adam(Optimizer):
 
             layer.params[n] -= ((self.lr * m_hat) / (np.sqrt(v_hat) + self.eps)) 
             layer.params[n] -= (self.weight_decay * layer.params[n])
-            #     top_term = (self.lr) * (1 - self.beta1) * layer.grads['adam_fc_w']
-            # #print(top_term)
-            #     bottom_term = (self.eps + (1-self.beta2) * layer.grads['adam_fc_w']) / (1 - np.power(self.beta2, self.t))
-            #     layer.grads[n] -= ( top_term / (1 - np.power(self.beta2, self.t) )) / bottom_term
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################

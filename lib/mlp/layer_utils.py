@@ -70,10 +70,6 @@ class sequential(object):
         for layer in self.layers:
             for n, v in layer.grads.items():
                 ######## TODO ########
-
-                # this layer.grads[n] += np.sum(np.abs(v)) * lam
-                # or this layer.grads[n] += np.sign(layer.params[n]) * lam
-               
                 layer.grads[n] += lam * np.sign(v)
                 ######## END  ########
     
@@ -84,7 +80,6 @@ class sequential(object):
         for layer in self.layers:
             for n, v in layer.grads.items():
                 ######## TODO ########
-                
                 layer.grads[n] += layer.params[n] * lam
                 ######## END  ########
 
@@ -200,20 +195,8 @@ class fc(object):
         # corresponding name.                                                       #
         # Store the output gradients in the variable dfeat provided above.          #
         #############################################################################
-        """
-        NEEDS 
-            input into that layer
-            deriv of wieghts
-            deriv of bias v
-            store in grad[w]
-            grad[b]
-            output = 
-        """
-
         self.grads[self.b_name] = dprev.sum(0)
-        #print(dprev.shape, feat.shape)
         self.grads[self.w_name] = feat.T @ dprev
-        #print(dprev.shape, self.params[self.w_name].shape)
         dfeat = dprev @ (self.params[self.w_name]).T
         #############################################################################
         #                             END OF YOUR CODE                              #
@@ -241,11 +224,8 @@ class gelu(object):
         #############################################################################
         temp_div = (2 / np.pi)**0.5  # scalar
         intermed_mat = feat + (0.044715 * (feat ** 3))
-        # print(intermed_mat.shape)
         final_mat = temp_div * intermed_mat
         final_mat = 1 + np.tanh(final_mat)
-        #print(feat.shape, final_mat.shape)
-
         output = (0.5 * feat) * final_mat
         #############################################################################
         #                             END OF YOUR CODE                              #
@@ -373,13 +353,6 @@ class cross_entropy(object):
         # Store the loss in the variable loss provided above.                       #
         #############################################################################
         N = label.shape[0]
-
-        # print(N)
-        # print(feat)
-        # print(np.log(logit).shape)
-        #print("logit second index size: ", logit.shape[1])
-        # print(label)
-
         one_hot = np.zeros((label.size, logit.shape[1]))
         one_hot[np.arange(label.size), label] = 1
         #print("onehot.shape: ", one_hot.shape, "logit: ", logit.shape)
@@ -401,15 +374,6 @@ class cross_entropy(object):
         # TODO: Implement the backward pass of an CE Loss                           #
         # Store the output gradients in the variable dlogit provided above.         #
         #############################################################################
-        """
-        temp_label = np.zeros((label.size, label.max() + 1))
-        temp_label[np.arange(label.size), label] = 1
-
-        term_one = np.divide(logit,temp_label)
-        term_two = np.divide((1 - logit), (1 - temp_label))
-        dlogit = np.add(term_one, term_two)
-        """
-
         logit[range(label.shape[0]), label] -= 1
         dlogit = logit / label.shape[0]
         #############################################################################
@@ -427,13 +391,6 @@ def softmax(feat):
     # TODO: Implement the forward pass of a softmax function                    #
     # Return softmax values over the last dimension of feat.                    #
     #############################################################################
-    #print(( np.sum(np.exp(feat), axis=1)).shape)
-    """temp = ( np.sum(np.exp(feat), axis=1))
-    print(temp.shape)
-    temp2 = temp.reshape(-1, 1)
-    print(temp2.shape)
-    scores = np.exp(feat) / temp2"""
-
     scores = (np.exp(feat)/(np.exp(feat).sum(1)).reshape(-1, 1))
     #print("THIS WORKS")
     #############################################################################

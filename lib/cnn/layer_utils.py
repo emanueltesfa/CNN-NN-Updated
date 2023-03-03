@@ -157,37 +157,29 @@ class ConvLayer2D(object):
         # TODO: Implement the forward pass of a single convolutional layer.       #
         # Store the results in the variable "output" provided above.                #
         #############################################################################
-        """stack_img = img.shape[0]
+        
+        stride = self.stride
+        input_channels = self.input_channels
         img_pad = np.pad(img, ((0,), (self.padding,), (self.padding,), (0,)), mode='constant')
 
-        output = np.zeros(shape=(stack_img, output_height, output_width, self.number_filters) )
-        #print("input shape: ", img.shape)
-        #print("output shape[0] ", output.shape[0])
-        
-        for batch in range (stack_img):
-            for pixel_h in range( output_height):
-                for pixel_w in range( output_width): 
-                    for filter in range(self.number_filters):
-                        cropped_img = img_pad[:, pixel_h * self.stride: self.kernel_size +  (pixel_h * self.stride) , pixel_w * self.stride: (pixel_w * self.stride) + self.kernel_size, :]
-                        curr_filter = self.params[self.w_name][:,:,:,filter] # set to current filter spanning over image 
+        # Compute strides for sliding window view
+        new_shape = ( img.shape[0], output_height, output_width, self.kernel_size, self.kernel_size, input_channels)
+        new_strides = (
+            img_pad.strides[0],
+            stride * img_pad.strides[1],
+            stride * img_pad.strides[2],
+            img_pad.strides[1],
+            img_pad.strides[2],
+            img_pad.strides[3]
+        )
 
-                        #print("pixel hieght is: ", pixel_h, "pixel width: ", pixel_w, "img at index: ", cropped_img.shape )
-                        #print("curr filter: ", curr_filter.shape)
-                        output[batch, pixel_h, pixel_w, filter] = ( cropped_img * curr_filter).sum(axis=(0,1, 2,3))
-                    output[batch, pixel_h, pixel_w, :] += self.params[self.b_name]"""
-        
+        # Create sliding window view of padded input image
+        img_as_kern = np.lib.stride_tricks.as_strided(img_pad, shape=new_shape, strides=new_strides)
+        img_as_kern = img_as_kern.reshape(img.shape[0], output_height, output_width, self.kernel_size * self.kernel_size * input_channels)
 
-        k = self.kernel_size
-        B = img.shape[0]
-        p = self.padding
-        img_padded = np.pad(img, ((0,), (self.padding,), (self.padding,), (0,)), mode='constant')
-        img_as_kern = np.lib.stride_tricks.sliding_window_view(img_padded, (k,k,self.input_channels),axis=(1,2,3))
-        img_as_kern = img_as_kern.squeeze(3)
-        img_as_kern = img_as_kern[:,::self.stride,::self.stride]
-        img_as_kern = img_as_kern.reshape(B,output_height,output_width,k,k,self.input_channels)
-        img_as_kern = img_as_kern.reshape(B,output_height,output_width,k*k*self.input_channels)
-        kernel = self.params[self.w_name].reshape(-1,self.number_filters)
-        output = np.einsum('bhwk,kc->bhwc', img_as_kern, kernel)
+        # Reshape kernel
+        kernel = self.params[self.w_name].reshape(-1, self.number_filters)
+        output = img_as_kern @ kernel 
         output += self.params[self.b_name]
         #############################################################################
         #                             END OF YOUR CODE                              #
@@ -211,8 +203,7 @@ class ConvLayer2D(object):
         # Store the output gradients in the variable dimg provided above.           #
         #############################################################################
         
-        #Works 
-        """img_pad = np.pad(img, ((0,), (self.padding,), (self.padding,), (0,)), mode='constant')
+        img_pad = np.pad(img, ((0,), (self.padding,), (self.padding,), (0,)), mode='constant')
         w_shape = self.params[self.w_name].shape
         dw = np.zeros((w_shape[3] , w_shape[0], w_shape[1], w_shape[2]))
         self.grads[self.b_name] = np.zeros(self.params[self.b_name].shape)
@@ -235,42 +226,7 @@ class ConvLayer2D(object):
 
         dimg = dimg_pad[:, self.padding:img.shape[1]+self.padding, self.padding:img.shape[2]+self.padding, :]   
         self.grads[self.w_name] = dw.transpose(1,2,3,0)
-        self.grads[self.b_name] = np.sum(dprev, axis=(0, 1, 2))"""
-
-        
-        #THIS WORKS
-        img_pad = np.zeros ([img.shape[0], img.shape [1]+2*self.padding, img.shape[2]+2*self.padding, img.shape[3]])
-        img_pad[:, self.padding: img.shape[1]+self.padding, self.padding:img.shape[2]+self.padding, :] = img
-
-        #output = np.empty(output_shape)
-
-        stride = (img_pad.strides[0],img_pad.strides[1]*self.stride, img_pad.strides[2]*self.stride, img_pad.strides[1], img_pad.strides[2], img_pad.strides[3])
-
-        shape = (img_pad.shape [0], dprev.shape [1], dprev.shape [2], self.kernel_size, self.kernel_size, img_pad.shape[3])
-
-        window = np.lib.stride_tricks.as_strided(img_pad, shape=shape, strides=stride, writeable=False)
-
-        self.grads [self.w_name] = np.tensordot(window, dprev, axes= ( (0,1,2), (0,1, 2)))
-
-        self.grads[self.b_name] = np.sum(dprev, axis=(0,1,2))
-
-        dimg_pad = np.zeros((*dprev.shape[:-1], *img_pad.shape [1:]))
-
-        istride = (dimg_pad.strides[0], dimg_pad.strides[1]+dimg_pad.strides[3]*self.stride, dimg_pad.strides[2]+dimg_pad.strides[4]*self.stride, dimg_pad.strides[3],dimg_pad.strides[4],dimg_pad.strides[5])
-
-        ishape = (*dimg_pad.shape[:3], self.kernel_size, self.kernel_size, dimg_pad.shape[-1])
-
-        iwindow = np.lib.stride_tricks.as_strided(dimg_pad, shape=ishape,strides=istride)
-
-        arr = np.tensordot(dprev, self.params [self.w_name], axes=( (3), (3)))
-
-        iwindow[:] = arr
-
-        dimg_pad = np. sum(dimg_pad,axis=(1,2))
-
-        dimg = dimg_pad[ :,self.padding:img.shape[1]+self.padding, self.padding:img.shape[2]+self.padding, :]
-        
-
+        self.grads[self.b_name] = np.sum(dprev, axis=(0, 1, 2))
         
         #############################################################################
         #                             END OF YOUR CODE                              #
